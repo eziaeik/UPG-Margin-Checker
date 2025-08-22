@@ -1,0 +1,3 @@
+item_name,requested_by,sku,upc,hd_retail,upg_sale,upg_cost,upg_pm,hd_pm,cost_diff,ideal_cost,recommendation,status,submitted_at,reviewed_at
+test1,ehsan z,8888,66666,50.0,20.0,5.0,75.0,60.0,-9.0,14.0,✅ Buy,Approved,2025-03-31 14:37:18,2025-03-31 14:40:47
+test3,ehsan z,4356346,3435435,40.0,30.0,10.0,66.67,25.0,-11.0,21.0,✅ Buy,Rejected,2025-03-31 14:40:19,2025-03-31 14:40:51

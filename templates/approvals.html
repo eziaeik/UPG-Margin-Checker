@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Approval Dashboard</title>
+  <style>
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .approved { color: green; }
+    .rejected { color: red; }
+    .pending { color: orange; }
+	
+	.po { color: gray; font-weight: bold; }
+	.pbs { color: blue; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h2>Approval Dashboard</h2>
+
+  <table>
+  <tr>
+  	<th>Item Name</th>
+  	<th>Requested By</th>
+  	<th>BC ID</th>
+  	<th>SKU</th>
+  	<th>UPC</th>
+  	<th>Suggested Selling $</th>
+  	<th>UPG Cost $</th>
+  	<th>Profit $</th>
+  	<th>Profit %</th>
+  	<th>Suggested Retail $</th>
+  	<th>Retail Margin %</th>
+  	<th>Program Type</th> <!-- moved up here -->
+  	<th>Status</th>
+  	<th>Submitted At</th>
+  	<th>Actions</th>
+  </tr>
+  
+  {% for item in requests %}
+  <tr>
+  	<td>{{ item.item_name }}</td>
+  	<td>{{ item.requested_by }}</td>
+  	<td>{{ item.bc_id }}</td>
+  	<td>{{ item.sku }}</td>
+  	<td>{{ item.upc }}</td>
+  	<td>${{ item.suggested_selling_price }}</td>
+  	<td>${{ item.upg_cost }}</td>
+  	<td>${{ item.profit_per_pot }}</td>
+  	<td>{{ item.profit_percent }}%</td>
+  	<td>${{ item.suggested_retail }}</td>
+  	<td>{{ item.retail_margin }}%</td>
+  	<td class="{{ item.program_type|lower }}">{{ item.program_type }}</td> <!-- matches new header -->
+  	<td class="{{ item.status|lower }}">{{ item.status }}</td>
+  	<td>{{ item.submitted_at }}</td>
+  	<td>
+	{% if item.status == 'Pending' %}
+	  <form method="post" action="/review/{{ loop.index0 }}">
+		<textarea name="review_note" rows="2" cols="25" placeholder="Add note..."></textarea><br>
+		<button type="submit" name="action" value="approve">✅ Approve</button>
+		<button type="submit" name="action" value="reject">❌ Reject</button>
+	  </form>
+	{% else %}
+		{{ item.status }}<br>{{ item.reviewed_at }}<br>
+		<em>{{ item.review_note }}</em>
+	{% endif %}
+
+  	</td>
+  </tr>
+  {% endfor %}
+  </table>
+
+</body>
+</html>
