@@ -19,11 +19,8 @@
     .rejected { color: red; }
     .pending { color: orange; }
 	
-	.po { color: rgb(226, 120, 20); font-weight: bold; }
+	.po { color: gray; font-weight: bold; }
 	.pbs { color: blue; font-weight: bold; }
-
-	.pfb { color: #06dbeb; font-weight: 700; } /* gray for Broker */
-    .pfg { color: #15803d; font-weight: 700; } /* green for Grower */
   </style>
 </head>
 <body>
@@ -36,15 +33,13 @@
   	<th>BC ID</th>
   	<th>SKU</th>
   	<th>UPC</th>
-	<th>Sales Program</th>
-	<th>Sell-Through</th>
   	<th>Suggested Selling $</th>
   	<th>UPG Cost $</th>
   	<th>Profit $</th>
   	<th>Profit %</th>
   	<th>Suggested Retail $</th>
   	<th>Retail Margin %</th>
-  	<th>Supply Source</th> <!-- moved up here -->
+  	<th>Program Type</th> <!-- moved up here -->
   	<th>Status</th>
   	<th>Submitted At</th>
   	<th>Actions</th>
@@ -57,15 +52,6 @@
   	<td>{{ item.bc_id }}</td>
   	<td>{{ item.sku }}</td>
   	<td>{{ item.upc }}</td>
-	<td class="{{ item.sell_program|lower }}">{{ item.sell_program }}</td>
-	<td>
-  	{% set st = item.sell_through_rate if item.sell_through_rate is defined else '' %}
-  	{% if st != '' %}
-    {{ (st|float * 100)|round(0) }}%
-  	{% else %}
-    	—
-  	{% endif %}
-	</td>
   	<td>${{ item.suggested_selling_price }}</td>
   	<td>${{ item.upg_cost }}</td>
   	<td>${{ item.profit_per_pot }}</td>

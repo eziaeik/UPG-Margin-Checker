@@ -1,212 +1,217 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>UPG Margin Checker</title>
-    <style>
-        .container {
-            display: flex;
-            justify-content: space-between;
-        }
-        .box {
-            width: 48%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            background-color: #f9f9f9;
-        }
-        h3 {
-            margin-top: 0;
-        }
-		
-		/* ✅ Add this new style */
-        #plants_per_sqft_display {
-            font-weight: bold;
-            padding: 4px 6px;
-            background-color: #f0f0f0;
-            border-radius: 4px;
-            display: inline-block;
-            min-width: 30px;
-            text-align: center;
-		}	
-    </style>
+  <meta charset="utf-8">
+  <title>UPG Margin Checker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    .container { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .box { flex: 1 1 420px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; background-color: #f9f9f9; }
+    h3 { margin-top: 0; }
+    #plants_per_sqft_display {
+      font-weight: bold; padding: 4px 6px; background-color: #f0f0f0;
+      border-radius: 4px; display: inline-block; min-width: 30px; text-align: center;
+    }
+    .hidden { display: none; }
+  </style>
 </head>
 <body>
-	<h1 style="color: green; font-size: 48px;">Nexa</h1>
-    <h3><span style="color: blue; font-size: 36px;">UPG</span> Margin Checker</h3>
-    <form method="post" action="/calculate">
+  <h1 style="color: green; font-size: 48px;">Nexa</h1>
+  <h3><span style="color: blue; font-size: 36px;">UPG</span> Margin Checker</h3>
 
-        <div class="container">
-            <!-- 🌿 Indirect Costs Section -->
-			<div class="box">
-				<h3>Indirect Costs (Overhead)</h3>
-				<label>Overhead Cost per Square Foot per Year ($):</label><br>
-				<input type="number" step="any" name="overhead_per_year" id="overhead_per_year" required><br><br>
-			
-				<label>Select Pot Size:</label><br>
-				<select id="potSize" required>
-					<option value="">--Select Pot Size--</option>
-					<option value="4">4-inch</option>
-					<option value="6">6-inch</option>
-					<option value="8">8-inch</option>
-					<option value="10">10-inch</option>
-					<option value="12">12-inch</option>
-				</select><br><br>
-			
-				<label>Plants per Square Foot:</label><br>
-				<span id="plants_per_sqft_display">—</span>
-				<input type="hidden" name="plants_per_sqft" id="plants_per_sqft"><br><br>
+  <form method="post" action="/calculate">
+    <!-- Supply Source  (PFB/PFG) -->
+    <div style="margin: 8px 0 16px;">
+      <strong>Supply Source: </strong>
+      <label style="margin-right:12px;">
+        <input type="radio" name="program_type" value="PFB" checked> PFB
+      </label>
+      <label>
+        <input type="radio" name="program_type" value="PFG"> PFG
+      </label>
+    </div>
 
-			
-				<label>Crop Time (weeks):</label><br>
-				<input type="number" step="any" name="crop_time" id="crop_time" required><br><br>
-			
-				<!-- ✅ Add this line here -->
-				<p><strong>Overhead Cost per Plant ($):</strong> <span id="overhead_cost_per_plant">0.00</span></p>
-			</div>
+    <div class="container">
+      <!-- 🌿 Indirect Costs Section (Overhead) -->
+      <div class="box" id="overhead-section">
+        <h3>Indirect Costs (Overhead)</h3>
 
+        <label>Overhead Cost per Square Foot per Year ($):</label><br>
+        <input type="number" step="any" name="overhead_per_year" id="overhead_per_year" data-overhead-req><br><br>
 
-            <!-- 🪴 Input Costs Section -->
-            <div class="box">
-                <h3>Input Costs (Direct Costs)</h3>
-                <label>Number of Plants per Pot:</label><br>
-				<input type="number" name="plants_per_pot" id="plants_per_pot" required><br><br>
-				
-				<label>Cost Per Plant (Plug) ($):</label><br>
-				<input type="number" step="any" name="cost_per_plant" id="cost_per_plant" required><br><br>
+        <label>Select Pot Size:</label><br>
+        <select id="potSize" name="pot_size" data-overhead-req>
+          <option value="">--Select Pot Size--</option>
+          <option value="4">4-inch</option>
+          <option value="6">6-inch</option>
+          <option value="8">8-inch</option>
+          <option value="10">10-inch</option>
+          <option value="12">12-inch</option>
+        </select><br><br>
 
-                <label>Cost of Soil, Pot & Tray ($):</label><br>
-                <input type="number" step="any" name="cost_soil_pot_tray" id="cost_soil_pot_tray" required><br><br>
+        <label>Plants per Square Foot:</label><br>
+        <span id="plants_per_sqft_display">—</span>
+        <input type="hidden" name="plants_per_sqft" id="plants_per_sqft"><br><br>
 
-                <label>Labor Costs Associated With Planting and Maintenance ($):</label><br>
-                <input type="number" step="any" name="labor_cost" id="labor_cost" required><br><br>
-				
-				<label>Embellishment ($):</label><br>
-				<input type="number" step="any" name="embellishment" id="embellishment" value="0"><br><br>
+        <label>Crop Time (weeks):</label><br>
+        <input type="number" step="any" name="crop_time" id="crop_time" data-overhead-req><br><br>
 
-				<label>UPG Upgrade Cost ($):</label><br>
-				<input type="number" step="any" name="upgrade_cost" id="upgrade_cost" value="0"><br><br>
+        <p><strong>Overhead Cost per Plant ($):</strong> <span id="overhead_cost_per_plant">0.00</span></p>
+      </div>
 
-				<p><strong>Total Direct Cost ($):</strong> <span id="total_direct_cost">0.00</span></p>
-            </div>
-        </div>
+      <!-- 🪴 Input Costs Section -->
+      <div class="box">
+        <h3>Input Costs (Direct Costs)</h3>
 
-        <!-- 💰 Selling Information Section -->
-        <h3>Selling Information</h3>
-        <label>Select Program Type:</label><br>
-		<select name="program_type" id="program_type" required>
-			<option value="">--Select Program--</option>
-			<option value="PO">PO</option>
-			<option value="PBS">PBS</option>
-		</select><br><br>
-		
-		<label>Sell-Through Rate (%):</label><br>
-		<input type="range" id="sell_through_slider" name="sell_through_slider" min="50" max="100" step="1" value="70">
-		<span id="sell_through_value">70%</span><br><br>
-		<input type="hidden" name="sell_through_rate" id="sell_through_rate" value="0.7">
+        <label>Number of Plants per Pot:</label><br>
+        <input type="number" name="plants_per_pot" id="plants_per_pot" required><br><br>
 
-        <label>Suggested Selling Price ($):</label><br>
-        <input type="number" step="any" name="suggested_selling_price" id="suggested_selling_price" required><br><br>
+        <label>Cost Per Plant (Plug) ($):</label><br>
+        <input type="number" step="any" name="cost_per_plant" id="cost_per_plant" required><br><br>
 
-        <label>Suggested Retail ($):</label><br>
-        <input type="number" step="any" name="suggested_retail" required><br><br>
+        <label>Cost of Soil, Pot & Tray ($):</label><br>
+        <input type="number" step="any" name="cost_soil_pot_tray" id="cost_soil_pot_tray" required><br><br>
 
-        <!-- Live UPG Cost Display -->
-        <p><strong>UPG Cost ($):</strong> <span id="upg_cost_display" style="font-weight:bold;">0.00</span></p>
-		<p><strong>Minimum Suggested Selling Price ($):</strong> <span id="min_selling_price">0.00</span></p>
-		<p><strong>Minimum Suggested Retail ($):</strong> <span id="min_retail_price">0.00</span></p>
+        <label>Labor Costs Associated With Planting and Maintenance ($):</label><br>
+        <input type="number" step="any" name="labor_cost" id="labor_cost" required><br><br>
 
-        <!-- Hidden field to submit UPG Cost -->
-        <input type="hidden" name="upg_cost_live" id="upg_cost_hidden">
+        <label>Embellishment ($):</label><br>
+        <input type="number" step="any" name="embellishment" id="embellishment" value="0"><br><br>
 
-        <input type="submit" value="Check Margin">
-    </form>
+        <label>UPG Upgrade Cost ($):</label><br>
+        <input type="number" step="any" name="upgrade_cost" id="upgrade_cost" value="0"><br><br>
 
-	<script>
-	document.addEventListener('DOMContentLoaded', function () {
-	
-		function calculateUPGCost() {
-			const cropTime = parseFloat(document.getElementById('crop_time').value) || 0;
-			const overheadPerYear = parseFloat(document.getElementById('overhead_per_year').value) || 0;
-			const plantsPerSqft = parseFloat(document.getElementById('plants_per_sqft').value) || 1;
-			const sqftPerPlant = 1 / plantsPerSqft;
-		
-			const overheadCostPerPlant = (cropTime * sqftPerPlant) * (overheadPerYear / 52);
-		
-			const plantsPerPot = parseFloat(document.getElementById('plants_per_pot').value) || 0;
-			const costPerPlant = parseFloat(document.getElementById('cost_per_plant').value) || 0;
-			const totalPlantsCost = plantsPerPot * costPerPlant;
-		
-			const soilPotTray = parseFloat(document.getElementById('cost_soil_pot_tray').value) || 0;
-			const labor = parseFloat(document.getElementById('labor_cost').value) || 0;
-			const embellishment = parseFloat(document.getElementById('embellishment').value) || 0;
-			const upgradeCost = parseFloat(document.getElementById('upgrade_cost').value) || 0;
-		
-			const totalDirectCost = totalPlantsCost + soilPotTray + labor + embellishment + upgradeCost;
-			const upgCost = totalDirectCost + overheadCostPerPlant;
-		
-			const targetMargin = 0.3;
-			const retailMarkup = 0.2;
-		
-			const slider = document.getElementById('sell_through_slider');
-			const sellThroughRate = parseFloat(slider.value) / 100;
-			document.getElementById('sell_through_value').textContent = slider.value + "%";
-			document.getElementById('sell_through_rate').value = sellThroughRate;
-		
-			const minSellingPrice = upgCost / (sellThroughRate * (1 - targetMargin));
-			const minRetailPrice = minSellingPrice * (1 + retailMarkup);
-		
-			document.getElementById('upg_cost_display').textContent = upgCost.toFixed(2);
-			document.getElementById('upg_cost_hidden').value = upgCost.toFixed(2);
-			document.getElementById('min_selling_price').textContent = minSellingPrice.toFixed(2);
-			document.getElementById('min_retail_price').textContent = minRetailPrice.toFixed(2);
-			document.getElementById('overhead_cost_per_plant').textContent = overheadCostPerPlant.toFixed(2);
-			document.getElementById('total_direct_cost').textContent = totalDirectCost.toFixed(2);
-		}
+        <p><strong>Total Direct Cost ($):</strong> <span id="total_direct_cost">0.00</span></p>
+      </div>
+    </div>
 
-	
-		const inputIds = [
-		'crop_time',
-		'overhead_per_year',
-		'plants_per_sqft',
-		'plants_per_pot',
-		'cost_per_plant',
-		'cost_soil_pot_tray',
-		'labor_cost',
-		'embellishment',
-		'upgrade_cost',
-		'suggested_selling_price'
-		];
-	
-		inputIds.forEach(id => {
-			const el = document.getElementById(id);
-			if (el) el.addEventListener('input', calculateUPGCost);
-		});
-		
-		document.getElementById('sell_through_slider').addEventListener('input', calculateUPGCost);
-	
-		document.querySelectorAll('input[name="program_type"]').forEach(radio => {
-			radio.addEventListener('change', calculateUPGCost);
-		});
-	
-		const plantsPerSqFtValues = {
-			4: 10,
-			6: 4,
-			8: 2,
-			10: 1,
-			12: 1
-		};
-	
-		document.getElementById('potSize').addEventListener('change', function () {
-			const selectedSize = this.value;
-			const value = plantsPerSqFtValues[selectedSize] || '';
-			document.getElementById('plants_per_sqft_display').textContent = value;
-			document.getElementById('plants_per_sqft').value = value;
-			calculateUPGCost();
-		});
-	
-	});
-	</script>
+    <!-- 💰 Selling Information Section -->
+    <h3>Selling Information</h3>
 
+    <label>Select Program Type:</label><br>
+    <select name="sell_program" id="sell_program" required>
+      <option value="">--Select Program--</option>
+      <option value="PO">PO</option>
+      <option value="PBS">PBS</option>
+    </select><br><br>
 
+    <label>Sell-Through Rate (%):</label><br>
+    <input type="range" id="sell_through_slider" name="sell_through_slider" min="50" max="100" step="1" value="70">
+    <span id="sell_through_value">70%</span><br><br>
+    <input type="hidden" name="sell_through_rate" id="sell_through_rate" value="0.7">
+
+    <label>Suggested Selling Price ($):</label><br>
+    <input type="number" step="any" name="suggested_selling_price" id="suggested_selling_price" required><br><br>
+
+    <label>Suggested Retail ($):</label><br>
+    <input type="number" step="any" name="suggested_retail" id="suggested_retail" required><br><br>
+
+    <!-- Live UPG Cost Display -->
+    <p><strong>UPG Cost ($):</strong> <span id="upg_cost_display" style="font-weight:bold;">0.00</span></p>
+    <p><strong>Minimum Suggested Selling Price ($):</strong> <span id="min_selling_price">0.00</span></p>
+    <p><strong>Minimum Suggested Retail ($):</strong> <span id="min_retail_price">0.00</span></p>
+
+    <!-- Hidden field to submit UPG Cost -->
+    <input type="hidden" name="upg_cost_live" id="upg_cost_hidden">
+
+    <input type="submit" value="Check Margin">
+  </form>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      function updateProgramUI(){
+        const selected = document.querySelector('input[name="program_type"]:checked')?.value || 'PFB';
+        const sec = document.getElementById('overhead-section');
+        const reqs = sec ? sec.querySelectorAll('[data-overhead-req]') : [];
+        if (selected === 'PFB') {
+          sec?.classList.add('hidden');
+          reqs.forEach(el => el.removeAttribute('required'));
+        } else {
+          sec?.classList.remove('hidden');
+          reqs.forEach(el => el.setAttribute('required','required'));
+        }
+      }
+
+      function calculateUPGCost() {
+        // Which program?
+        const program = document.querySelector('input[name="program_type"]:checked')?.value || 'PFB';
+
+        // Overhead pieces
+        const cropTime = parseFloat(document.getElementById('crop_time').value) || 0;
+        const overheadPerYear = parseFloat(document.getElementById('overhead_per_year').value) || 0;
+        const plantsPerSqft = parseFloat(document.getElementById('plants_per_sqft').value) || 1;
+        const sqftPerPlant = 1 / plantsPerSqft;
+
+        // Overhead: only for PFG
+        const overheadCostPerPlant = (program === 'PFB')
+          ? 0
+          : (cropTime * sqftPerPlant) * (overheadPerYear / 52);
+
+        // Direct costs
+        const plantsPerPot = parseFloat(document.getElementById('plants_per_pot').value) || 0;
+        const costPerPlant = parseFloat(document.getElementById('cost_per_plant').value) || 0;
+        const totalPlantsCost = plantsPerPot * costPerPlant;
+
+        const soilPotTray = parseFloat(document.getElementById('cost_soil_pot_tray').value) || 0;
+        const labor = parseFloat(document.getElementById('labor_cost').value) || 0;
+        const embellishment = parseFloat(document.getElementById('embellishment').value) || 0;
+        const upgradeCost = parseFloat(document.getElementById('upgrade_cost').value) || 0;
+
+        const totalDirectCost = totalPlantsCost + soilPotTray + labor + embellishment + upgradeCost;
+        const upgCost = totalDirectCost + overheadCostPerPlant;
+
+        // Selling calc
+        const slider = document.getElementById('sell_through_slider');
+        const sellThroughRate = (parseFloat(slider.value) || 70) / 100;
+        document.getElementById('sell_through_value').textContent = slider.value + "%";
+        document.getElementById('sell_through_rate').value = sellThroughRate;
+
+        const targetMargin = 0.30;
+        const retailMarkup = 0.20;
+
+        const denom = sellThroughRate * (1 - targetMargin);
+        const minSellingPrice = denom > 0 ? (upgCost / denom) : 0;
+        const minRetailPrice = minSellingPrice * (1 + retailMarkup);
+
+        // Update UI
+        document.getElementById('upg_cost_display').textContent = upgCost.toFixed(2);
+        document.getElementById('upg_cost_hidden').value = upgCost.toFixed(2);
+        document.getElementById('min_selling_price').textContent = minSellingPrice.toFixed(2);
+        document.getElementById('min_retail_price').textContent = minRetailPrice.toFixed(2);
+        document.getElementById('overhead_cost_per_plant').textContent = overheadCostPerPlant.toFixed(2);
+        document.getElementById('total_direct_cost').textContent = totalDirectCost.toFixed(2);
+      }
+
+      // Plants per sqft mapping by pot size
+      const plantsPerSqFtValues = { 4: 10, 6: 4, 8: 2, 10: 1, 12: 1 };
+      document.getElementById('potSize').addEventListener('change', function () {
+        const selectedSize = this.value;
+        const value = plantsPerSqFtValues[selectedSize] || '';
+        document.getElementById('plants_per_sqft_display').textContent = value || '—';
+        document.getElementById('plants_per_sqft').value = value;
+        calculateUPGCost();
+      });
+
+      // Listeners
+      const ids = [
+        'crop_time','overhead_per_year','plants_per_sqft',
+        'plants_per_pot','cost_per_plant','cost_soil_pot_tray',
+        'labor_cost','embellishment','upgrade_cost','suggested_selling_price',
+        'suggested_retail'
+      ];
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', calculateUPGCost);
+      });
+      document.getElementById('sell_through_slider').addEventListener('input', calculateUPGCost);
+      document.querySelectorAll('input[name="program_type"]').forEach(r => {
+        r.addEventListener('change', () => { updateProgramUI(); calculateUPGCost(); });
+      });
+
+      // Init on load
+      updateProgramUI();
+      calculateUPGCost();
+    });
+  </script>
 </body>
 </html>
