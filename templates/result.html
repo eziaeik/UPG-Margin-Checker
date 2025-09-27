@@ -7,16 +7,26 @@
   <h2>Margin Result</h2>
 
   <p><strong>UPG PM (HD Retail - UPG Cost):</strong> {{ upg_pm }}%</p>
-  <p><strong>HD PM (HD Retail - UPG Sale):</strong> {{ hd_pm }}%</p>
+  <p><strong>HD PM (HD Retail - UPG Sale, margin on retail):</strong> {{ hd_pm }}%</p>
   <p><strong>Recommendation:</strong> {{ recommendation }}</p>
 
   {% if recommendation == '✅ Buy' %}
       <p style="color:green;">Great! You're making ${{ cost_diff }} profit per pot, which is {{ profit_percent }}% of the selling price.</p>
   {% elif recommendation == '⚠ Borderline Profit' %}
       <p style="color:orange;">Warning: You're making only ${{ cost_diff }} profit per pot, which is below the 30% target margin. Review before submitting.</p>
+  {% elif losing %}
+      <p style="color:red;">You're losing ${{ (-1 * cost_diff) | round(2) }} per pot. Ideal cost should be ${{ ideal_cost }}. Please recheck inputs.</p>
   {% else %}
-      <p style="color:red;">You're losing ${{ cost_diff }} per pot. Ideal cost should be ${{ ideal_cost }}. Please recheck inputs.</p>
+      <p style="color:red;">HD margin is below 20%. Required Retail is ${{ required_retail }}.</p>
   {% endif %}
+
+  <hr>
+  <h3>Sales Program Info</h3>
+  <p><strong>Supply Source:</strong>
+    <span style="font-weight:bold; color:blue;">{{ program_type }}</span>
+  </p>
+  <p><strong>Program Type:</strong> {{ sell_program if sell_program else '—' }}</p>
+  <p><strong>Sell-Through Rate:</strong> {{ (sell_through_rate * 100)|round(0) }}%</p>
 
   <hr>
   <h3>Cost Breakdown</h3>
@@ -25,10 +35,10 @@
       <li>🪴 Soil, Pot & Tray Cost: ${{ cost_soil_pot_tray }}</li>
       <li>👷 Labor Cost: ${{ labor_cost }}</li>
       <li>🏭 Overhead Allocation: ${{ overhead_allocation }}</li>
-	  <li>✨ Embellishment: ${{ embellishment }}</li>
-	  <li>🚀 UPG Upgrade Cost: ${{ upgrade_cost }}</li>
+      <li>✨ Embellishment: ${{ embellishment }}</li>
+      <li>🚀 UPG Upgrade Cost: ${{ upgrade_cost }}</li>
   </ul>
-  
+
   <h3>⚠️ Cost Warnings</h3>
   <ul>
       {% if plant_flag %}
@@ -45,15 +55,25 @@
       {% endif %}
   </ul>
 
-
   <hr>
   <p><strong>UPG Cost ($):</strong> {{ upg_cost }}</p>
   <p><strong>Suggested Selling Price ($):</strong> {{ suggested_selling_price }}</p>
   <p><strong>Profit per Pot ($):</strong> {{ profit_per_pot }}</p>
   <p><strong>Profit as % of Sales:</strong> {{ profit_percent }}%</p>
   <p><strong>Suggested Retail Price ($):</strong> {{ suggested_retail }}</p>
-  <p><strong>Retail Margin %:</strong> {{ retail_margin }}%</p>
+  <p><strong>Retail Margin % (on retail):</strong> {{ retail_margin }}%</p>
 
+  {% if not meets_hd_margin %}
+  <p style="color:red; margin-top:4px;">
+    HD is below the 20% target margin. Required Retail is ${{ required_retail }}.
+  </p>
+  {% endif %}
+
+  {% if not meets_upg_margin %}
+  <p style="color:red; margin-top:4px;">
+    UPG margin is below the 30% target.
+  </p>
+  {% endif %}
 
   {% if show_form %}
   <hr>
@@ -81,13 +101,13 @@
     <input type="hidden" name="profit_percent" value="{{ profit_percent }}">
     <input type="hidden" name="suggested_selling_price" value="{{ suggested_selling_price }}">
     <input type="hidden" name="suggested_retail" value="{{ suggested_retail }}">
-    <input type="hidden" name="retail_margin" value="{{ retail_margin }}">
+    <input type="hidden" name="retail_margin" value="{{ hd_pm }}">
     <input type="hidden" name="recommendation" value="{{ recommendation }}">
-	<input type="hidden" name="program_type" value="{{ program_type }}">
+    <input type="hidden" name="program_type" value="{{ program_type }}">
     <input type="hidden" name="sell_program" value="{{ sell_program }}">
-	<input type="hidden" name="embellishment" value="{{ embellishment }}">
-	<input type="hidden" name="upgrade_cost" value="{{ upgrade_cost }}">
-	<input type="hidden" name="sell_through_rate" value="{{ sell_through_rate }}">
+    <input type="hidden" name="embellishment" value="{{ embellishment }}">
+    <input type="hidden" name="upgrade_cost" value="{{ upgrade_cost }}">
+    <input type="hidden" name="sell_through_rate" value="{{ sell_through_rate }}">
 
     <!-- Indirect / Overhead -->
     <input type="hidden" name="overhead_per_year" value="{{ overhead_per_year }}">
@@ -101,26 +121,17 @@
     <input type="hidden" name="cost_per_plant" value="{{ cost_per_plant }}">
     <input type="hidden" name="cost_soil_pot_tray" value="{{ cost_soil_pot_tray }}">
     <input type="hidden" name="labor_cost" value="{{ labor_cost }}">
-    <input type="hidden" name="embellishment" value="{{ embellishment }}">
-    <input type="hidden" name="upgrade_cost" value="{{ upgrade_cost }}">
     <input type="hidden" name="total_direct_cost" value="{{ total_direct_cost }}">
 
-    <!-- Minimums -->
+    <!-- Minimums (for record-keeping) -->
     <input type="hidden" name="min_selling_price" value="{{ min_selling_price }}">
     <input type="hidden" name="min_suggested_retail" value="{{ min_suggested_retail }}">
-	
-	<hr>
-	<h3>Sales Program Info</h3>
-	<p>
-	<strong>Program Type:</strong>
-    <span{% if program_type == 'PO' %} style="color:gray; font-weight: bold;"{% elif program_type %} style="color:blue; font-weight: bold;"{% endif %}>
-    {{ program_type }}
-    </span>
-	</p>
-	<p><strong>Sell-Through Rate:</strong> {{ (sell_through_rate * 100)|round(0) }}%</p>
 
     <input type="submit" value="Send for Approval">
   </form>
+  {% else %}
+  <hr>
+  <p><em>Submission is disabled until both targets are met: UPG ≥ 30% and HD ≥ 20%.</em></p>
   {% endif %}
 
   <br><br>

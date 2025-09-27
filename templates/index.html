@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -137,9 +138,9 @@
         const program = document.querySelector('input[name="program_type"]:checked')?.value || 'PFB';
 
         // Overhead pieces
-        const cropTime = parseFloat(document.getElementById('crop_time').value) || 0;
-        const overheadPerYear = parseFloat(document.getElementById('overhead_per_year').value) || 0;
-        const plantsPerSqft = parseFloat(document.getElementById('plants_per_sqft').value) || 1;
+        const cropTime = parseFloat(document.getElementById('crop_time')?.value) || 0;
+        const overheadPerYear = parseFloat(document.getElementById('overhead_per_year')?.value) || 0;
+        const plantsPerSqft = parseFloat(document.getElementById('plants_per_sqft')?.value) || 1;
         const sqftPerPlant = 1 / plantsPerSqft;
 
         // Overhead: only for PFG
@@ -148,14 +149,14 @@
           : (cropTime * sqftPerPlant) * (overheadPerYear / 52);
 
         // Direct costs
-        const plantsPerPot = parseFloat(document.getElementById('plants_per_pot').value) || 0;
-        const costPerPlant = parseFloat(document.getElementById('cost_per_plant').value) || 0;
+        const plantsPerPot = parseFloat(document.getElementById('plants_per_pot')?.value) || 0;
+        const costPerPlant = parseFloat(document.getElementById('cost_per_plant')?.value) || 0;
         const totalPlantsCost = plantsPerPot * costPerPlant;
 
-        const soilPotTray = parseFloat(document.getElementById('cost_soil_pot_tray').value) || 0;
-        const labor = parseFloat(document.getElementById('labor_cost').value) || 0;
-        const embellishment = parseFloat(document.getElementById('embellishment').value) || 0;
-        const upgradeCost = parseFloat(document.getElementById('upgrade_cost').value) || 0;
+        const soilPotTray = parseFloat(document.getElementById('cost_soil_pot_tray')?.value) || 0;
+        const labor = parseFloat(document.getElementById('labor_cost')?.value) || 0;
+        const embellishment = parseFloat(document.getElementById('embellishment')?.value) || 0;
+        const upgradeCost = parseFloat(document.getElementById('upgrade_cost')?.value) || 0;
 
         const totalDirectCost = totalPlantsCost + soilPotTray + labor + embellishment + upgradeCost;
         const upgCost = totalDirectCost + overheadCostPerPlant;
@@ -167,20 +168,26 @@
         document.getElementById('sell_through_rate').value = sellThroughRate;
 
         const TARGET_UPG_PM = 0.30;   // 30% margin on Selling
-		const TARGET_HD_PM  = 0.20;   // 20% margin on Retail
+        const TARGET_HD_PM  = 0.20;   // 20% margin on Retail
 
+        // ---- MATCH BACKEND: compute in integer cents with CEIL ----
+        const denom = Math.max(sellThroughRate, 0.01) * (1 - TARGET_UPG_PM);
 
-		// Always apply sell-through, regardless of program
-		const denom = Math.max(sellThroughRate, 0.01) * Math.max(1 - TARGET_UPG_PM, 0.01);
-		const minSellingPrice = upgCost / denom;
-		const minRetailPrice = minSellingPrice / (1 - TARGET_HD_PM);
+        // 1) Minimum selling in cents
+        const minSellCents = Math.ceil((upgCost * 100) / denom);
 
+        // 2) Minimum retail in cents (based on that min selling)
+        const minRetailCents = Math.ceil(minSellCents / (1 - TARGET_HD_PM));
+
+        // Convert back to dollars for display
+        const minSellingPrice = (minSellCents / 100).toFixed(2);
+        const minRetailPrice  = (minRetailCents / 100).toFixed(2);
 
         // Update UI
         document.getElementById('upg_cost_display').textContent = upgCost.toFixed(2);
         document.getElementById('upg_cost_hidden').value = upgCost.toFixed(2);
-        document.getElementById('min_selling_price').textContent = minSellingPrice.toFixed(2);
-        document.getElementById('min_retail_price').textContent = minRetailPrice.toFixed(2);
+        document.getElementById('min_selling_price').textContent = minSellingPrice;
+        document.getElementById('min_retail_price').textContent = minRetailPrice;
         document.getElementById('overhead_cost_per_plant').textContent = overheadCostPerPlant.toFixed(2);
         document.getElementById('total_direct_cost').textContent = totalDirectCost.toFixed(2);
       }
