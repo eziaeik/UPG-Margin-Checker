@@ -166,12 +166,15 @@
         document.getElementById('sell_through_value').textContent = slider.value + "%";
         document.getElementById('sell_through_rate').value = sellThroughRate;
 
-        const targetMargin = 0.30;
-        const retailMarkup = 0.20;
+        const TARGET_UPG_PM = 0.30;   // 30% margin on Selling
+		const TARGET_HD_PM  = 0.20;   // 20% margin on Retail
 
-        const denom = sellThroughRate * (1 - targetMargin);
-        const minSellingPrice = denom > 0 ? (upgCost / denom) : 0;
-        const minRetailPrice = minSellingPrice * (1 + retailMarkup);
+
+		// Always apply sell-through, regardless of program
+		const denom = Math.max(sellThroughRate, 0.01) * Math.max(1 - TARGET_UPG_PM, 0.01);
+		const minSellingPrice = upgCost / denom;
+		const minRetailPrice = minSellingPrice / (1 - TARGET_HD_PM);
+
 
         // Update UI
         document.getElementById('upg_cost_display').textContent = upgCost.toFixed(2);

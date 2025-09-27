@@ -8,7 +8,59 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-DATA_FILE = 'requests.json'
+BASE_DIR   = os.path.dirname(os.path.abspath(__file__))      # folder of run01.py
+DATA_DIR   = os.path.join(BASE_DIR, "data")
+BACKUP_DIR = os.path.join(DATA_DIR, "backups")
+os.makedirs(BACKUP_DIR, exist_ok=True)
+os.makedirs(DATA_DIR, exist_ok=True)
+
+DATA_FILE = os.path.join(DATA_DIR, "requests.json")
+
+def load_requests():
+    if not os.path.exists(DATA_FILE):
+        return []
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            # if file is corrupted, try the most recent backup
+            backups = sorted(
+                (b for b in os.listdir(BACKUP_DIR) if b.startswith("requests-") and b.endswith(".json")),
+                reverse=True
+            )
+            for b in backups:
+                with open(os.path.join(BACKUP_DIR, b), "r", encoding="utf-8") as bf:
+                    try:
+                        return json.load(bf)
+                    except json.JSONDecodeError:
+                        continue
+            return []
+
+def save_requests(data):
+    # 1) Write atomically to a temp file then replace
+    tmp = DATA_FILE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, DATA_FILE)
+
+    # 2) Create a timestamped backup (rotation optional)
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    backup_path = os.path.join(BACKUP_DIR, f"requests-{stamp}.json")
+    with open(backup_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+    # 3) (Optional) keep only last N backups
+    N = 30
+    backups = sorted(
+        (os.path.join(BACKUP_DIR, b) for b in os.listdir(BACKUP_DIR) if b.startswith("requests-") and b.endswith(".json")),
+        key=os.path.getmtime, reverse=True
+    )
+    for old in backups[N:]:
+        try: os.remove(old)
+        except OSError: pass
+
 
 def load_requests():
     if not os.path.exists(DATA_FILE):
@@ -61,6 +113,20 @@ def calculate():
 
         # --- Totals ---
         upg_cost = total_cost_plants + cost_soil_pot_tray + labor_cost + overhead_allocation + embellishment + upgrade_cost
+        total_direct_cost = total_cost_plants + cost_soil_pot_tray + labor_cost + embellishment + upgrade_cost
+        overhead_cost_per_plant = overhead_allocation  # your formula is already per-plant
+
+        # --- Minimum price targets (match front-end) ---
+        TARGET_UPG_PM = 0.30  # 30% margin on Selling
+        TARGET_HD_PM  = 0.20  # 20% margin on Retail
+
+        def safe_div(a, b): 
+            return a / b if b else float("inf")
+        
+        # Always include sell-through in the denominator, regardless of program_type
+        denom = max(sell_through_rate, 0.01) * max(1 - TARGET_UPG_PM, 0.01)
+        min_selling_price    = safe_div(upg_cost, denom)
+        min_suggested_retail = safe_div(min_selling_price, (1 - TARGET_HD_PM))
 
         # --- Shares / flags (guard upg_cost) ---
         if upg_cost > 0:
@@ -79,7 +145,10 @@ def calculate():
         actual_revenue  = suggested_selling_price * sell_through_rate
         profit_per_pot  = actual_revenue - upg_cost
         profit_percent  = ((profit_per_pot / actual_revenue) * 100) if actual_revenue > 0 else 0.0
-        retail_margin   = (((suggested_retail - suggested_selling_price) / suggested_selling_price) * 100) if suggested_selling_price > 0 else 0.0
+        # Force HD retail based on 20% margin
+        TARGET_HD_PM = 0.20
+        min_suggested_retail = safe_div(suggested_selling_price, (1 - TARGET_HD_PM))
+        retail_margin = TARGET_HD_PM * 100
 
         # --- Recommendation ---
         target_margin     = 30
@@ -100,6 +169,8 @@ def calculate():
             'result.html',
             # core numbers
             upg_cost=round(upg_cost, 2),
+            min_selling_price=round(min_selling_price, 2),
+            min_suggested_retail=round(min_suggested_retail, 2),
             overhead_allocation=round(overhead_allocation, 2),
             total_cost_plants=round(total_cost_plants, 2),
             cost_soil_pot_tray=round(cost_soil_pot_tray, 2),
@@ -122,6 +193,18 @@ def calculate():
             program_type=program_type,      # PFB or PFG (from radios)
             sell_program=sell_program,      # PO / PBS (from select, rename in HTML)
             sell_through_rate=sell_through_rate,
+
+            # NEW: for approvals
+            total_direct_cost=round(total_direct_cost, 2),
+            overhead_cost_per_plant=round(overhead_cost_per_plant, 2),
+
+            # echo raw inputs so we can store/show later
+            plants_per_pot=plants_per_pot,
+            cost_per_plant=round(cost_per_plant, 2),
+            crop_time=request.form.get('crop_time', ''),
+            overhead_per_year=request.form.get('overhead_per_year', ''),
+            plants_per_sqft=request.form.get('plants_per_sqft', ''),
+            pot_size=request.form.get('pot_size', ''),
 
             # flags
             plant_flag=plant_flag,
@@ -156,11 +239,33 @@ def submit():
 
         # If you include PO/PBS in the submit form, also capture it:
         'sell_program': request.form.get('sell_program', ''),
+        'sell_through_rate': request.form.get('sell_through_rate', ''),
 
         'status': 'Pending',
         'submitted_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'embellishment': request.form['embellishment'],
-        'upgrade_cost': request.form['upgrade_cost']
+        'upgrade_cost': request.form['upgrade_cost'],
+
+        # Indirect
+        'overhead_per_year': request.form.get('overhead_per_year', ''),
+        'pot_size': request.form.get('pot_size', ''),
+        'plants_per_sqft': request.form.get('plants_per_sqft', ''),
+        'crop_time': request.form.get('crop_time', ''),
+        'overhead_cost_per_plant': request.form.get('overhead_cost_per_plant', ''),
+
+        # Direct
+        'plants_per_pot': request.form.get('plants_per_pot', ''),
+        'cost_per_plant': request.form.get('cost_per_plant', ''),
+        'cost_soil_pot_tray': request.form.get('cost_soil_pot_tray', ''),
+        'labor_cost': request.form.get('labor_cost', ''),
+        'embellishment': request.form.get('embellishment', ''),
+        'upgrade_cost': request.form.get('upgrade_cost', ''),
+        'total_direct_cost': request.form.get('total_direct_cost', ''),
+
+        # Minimums
+        'min_selling_price': request.form.get('min_selling_price', ''),
+        'min_suggested_retail': request.form.get('min_suggested_retail', ''),
+
     }
 
     requests = load_requests()
@@ -203,9 +308,13 @@ def status():
 @app.route('/export')
 def export():
     requests_data = load_requests()
+    if not requests_data:
+        return "No data to export."
+    # union of keys across all rows
+    fieldnames = sorted({k for row in requests_data for k in row.keys()})
     csv_file = 'exported_requests.csv'
     with open(csv_file, mode='w', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=requests_data[0].keys())
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(requests_data)
     return send_file(csv_file, as_attachment=True)

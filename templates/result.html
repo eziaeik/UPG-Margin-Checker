@@ -84,17 +84,38 @@
     <input type="hidden" name="retail_margin" value="{{ retail_margin }}">
     <input type="hidden" name="recommendation" value="{{ recommendation }}">
 	<input type="hidden" name="program_type" value="{{ program_type }}">
+    <input type="hidden" name="sell_program" value="{{ sell_program }}">
 	<input type="hidden" name="embellishment" value="{{ embellishment }}">
 	<input type="hidden" name="upgrade_cost" value="{{ upgrade_cost }}">
 	<input type="hidden" name="sell_through_rate" value="{{ sell_through_rate }}">
+
+    <!-- Indirect / Overhead -->
+    <input type="hidden" name="overhead_per_year" value="{{ overhead_per_year }}">
+    <input type="hidden" name="pot_size" value="{{ pot_size }}">
+    <input type="hidden" name="plants_per_sqft" value="{{ plants_per_sqft }}">
+    <input type="hidden" name="crop_time" value="{{ crop_time }}">
+    <input type="hidden" name="overhead_cost_per_plant" value="{{ overhead_cost_per_plant }}">
+
+    <!-- Direct costs -->
+    <input type="hidden" name="plants_per_pot" value="{{ plants_per_pot }}">
+    <input type="hidden" name="cost_per_plant" value="{{ cost_per_plant }}">
+    <input type="hidden" name="cost_soil_pot_tray" value="{{ cost_soil_pot_tray }}">
+    <input type="hidden" name="labor_cost" value="{{ labor_cost }}">
+    <input type="hidden" name="embellishment" value="{{ embellishment }}">
+    <input type="hidden" name="upgrade_cost" value="{{ upgrade_cost }}">
+    <input type="hidden" name="total_direct_cost" value="{{ total_direct_cost }}">
+
+    <!-- Minimums -->
+    <input type="hidden" name="min_selling_price" value="{{ min_selling_price }}">
+    <input type="hidden" name="min_suggested_retail" value="{{ min_suggested_retail }}">
 	
 	<hr>
 	<h3>Sales Program Info</h3>
 	<p>
 	<strong>Program Type:</strong>
-	<span style="color: {% if program_type == 'PO' %}gray{% else %}blue{% endif %}; font-weight: bold;">
+    <span{% if program_type == 'PO' %} style="color:gray; font-weight: bold;"{% elif program_type %} style="color:blue; font-weight: bold;"{% endif %}>
     {{ program_type }}
-	</span>
+    </span>
 	</p>
 	<p><strong>Sell-Through Rate:</strong> {{ (sell_through_rate * 100)|round(0) }}%</p>
 
