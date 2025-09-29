@@ -20,6 +20,9 @@ def ceil_cents(x: float) -> float:
     d = Decimal(str(x)) * Decimal(100)
     return float((d.to_integral_value(rounding=ROUND_CEILING)) / Decimal(100))
 
+def safe_div(a, b):
+    return a / b if b else float("inf")
+
 # -------- Robust load/save with backups --------
 def load_requests():
     if not os.path.exists(DATA_FILE):
@@ -75,7 +78,7 @@ def calculate():
         # --- Inputs used by BOTH programs ---
         embellishment           = float(request.form.get('embellishment', 0) or 0)
         upgrade_cost            = float(request.form.get('upgrade_cost', 0) or 0)
-        program_type            = (request.form.get('program_type', 'PFB') or 'PFB').upper()  # PFB or PFG (radios)
+        program_type            = (request.form.get('program_type', 'PFB') or 'PFB').upper()  # PFB or PFG
         sell_through_rate       = float(request.form.get('sell_through_rate', 0.7) or 0.7)
 
         plants_per_pot          = int(float(request.form.get('plants_per_pot', 0) or 0))
@@ -87,7 +90,7 @@ def calculate():
         suggested_selling_price = float(request.form.get('suggested_selling_price', 0) or 0)
         suggested_retail        = float(request.form.get('suggested_retail', 0) or 0)
 
-        sell_program            = request.form.get('sell_program', '')
+        sell_program            = request.form.get('sell_program', '')  # PO/PBS
 
         # --- Overhead (only for PFG) ---
         if program_type == 'PFB':
@@ -113,9 +116,6 @@ def calculate():
         TARGET_UPG_PM = 0.30  # 30% margin on Selling
         TARGET_HD_PM  = 0.20  # 20% margin on Retail
 
-        def safe_div(a, b):
-            return a / b if b else float("inf")
-
         # Minimums (ceil to cents so suggested values actually meet/exceed targets)
         denom = max(sell_through_rate, 0.01) * (1 - TARGET_UPG_PM)
         min_selling_price    = ceil_cents(safe_div(upg_cost, denom))
@@ -124,29 +124,22 @@ def calculate():
         # Required retail for ENTERED selling price (ceil to cents as well)
         required_retail_from_entered = ceil_cents(safe_div(suggested_selling_price, (1 - TARGET_HD_PM)))
 
-        # --- HD metrics ---
+        # --- HD metrics (HD PM = (Retail - Selling) / Retail) ---
         hd_pm = ((suggested_retail - suggested_selling_price) / suggested_retail * 100) if suggested_retail > 0 else 0.0
         meets_hd_margin = round(hd_pm, 2) >= TARGET_HD_PM * 100
 
-        # --- Profit / margins ---
+        # --- Profit / margins (UPG PM on realized revenue) ---
         actual_revenue  = suggested_selling_price * sell_through_rate
         profit_per_pot  = actual_revenue - upg_cost
         profit_percent  = ((profit_per_pot / actual_revenue) * 100) if actual_revenue > 0 else 0.0
-
-        # UPG pass (rounded) — mirror the HD rule
         meets_upg_margin = round(profit_percent, 2) >= TARGET_UPG_PM * 100
 
         # --- Recommendation ---
-        target_margin     = 30
-        borderline_margin = 29.5
-
-        if profit_per_pot <= 0:
+        if profit_per_pot <= 0 or not meets_hd_margin:
             recommendation = "❌ Recheck"
-        elif round(hd_pm, 2) < TARGET_HD_PM * 100:
-            recommendation = "❌ Recheck"
-        elif profit_percent >= target_margin:
+        elif profit_percent >= 30.0:
             recommendation = "✅ Buy"
-        elif profit_percent >= borderline_margin:
+        elif profit_percent >= 29.5:
             recommendation = "⚠ Borderline Profit"
         else:
             recommendation = "❌ Recheck"
@@ -159,6 +152,7 @@ def calculate():
             upg_cost=round(upg_cost, 2),
             min_selling_price=round(min_selling_price, 2),
             min_suggested_retail=round(min_suggested_retail, 2),
+            required_retail=round(required_retail_from_entered, 2),
             meets_hd_margin=meets_hd_margin,
             meets_upg_margin=meets_upg_margin,
             overhead_allocation=round(overhead_allocation, 2),
@@ -172,7 +166,7 @@ def calculate():
             suggested_selling_price=round(suggested_selling_price, 2),
             suggested_retail=round(suggested_retail, 2),
             hd_pm=round(hd_pm, 2),
-            retail_margin=round(hd_pm, 2),
+            retail_margin=round(hd_pm, 2),  # keep alias
             recommendation=recommendation,
             show_form=show_form,
             losing=(profit_per_pot <= 0),
@@ -184,7 +178,6 @@ def calculate():
             program_type=program_type,
             sell_program=sell_program,
             sell_through_rate=sell_through_rate,
-            required_retail=round(required_retail_from_entered, 2),
 
             total_direct_cost=round(total_direct_cost, 2),
             overhead_cost_per_plant=round(overhead_cost_per_plant, 2),
@@ -216,7 +209,6 @@ def submit():
         TARGET_UPG_PM = 30.0
         TARGET_HD_PM  = 20.0
 
-        # recompute from submitted values
         actual_revenue = suggested_selling_price * sell_through_rate
         profit_per_pot = actual_revenue - upg_cost
         profit_percent = ((profit_per_pot / actual_revenue) * 100) if actual_revenue > 0 else -1e9
@@ -234,13 +226,15 @@ def submit():
                 <a href="/">Back</a>
                 """
             )
-
     except Exception:
-        # If anything goes wrong, be safe and block
         return "<h2>Submission blocked</h2><p>Invalid inputs.</p><a href='/'>Back</a>"
 
-    # ------- Proceed with saving if ok -------
+    # ------- Build & save item with a unique ID -------
+    requests_data = load_requests()
+    next_id = 1 + max((int(r.get('id', 0)) for r in requests_data), default=0)
+
     item = {
+        'id': next_id,
         'item_name': request.form['item_name'],
         'requested_by': request.form['requested_by'],
         'bc_id': request.form['bc_id'],
@@ -279,11 +273,11 @@ def submit():
 
         'min_selling_price': request.form.get('min_selling_price', ''),
         'min_suggested_retail': request.form.get('min_suggested_retail', ''),
+        'required_retail': request.form.get('required_retail', ''),
     }
 
-    data = load_requests()
-    data.append(item)
-    save_requests(data)
+    requests_data.append(item)
+    save_requests(requests_data)
 
     return f"""
     <h2>Approval Request Sent</h2>
@@ -345,4 +339,4 @@ def delete(index):
     return redirect(url_for('admin'))
 
 if __name__ == '__main__':
-    app.run(host='192.168.0.228', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

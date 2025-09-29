@@ -30,6 +30,7 @@
 
   <table>
     <tr>
+	  <th>ID</th>
       <th>Item Name</th>
       <th>Requested By</th>
       <th>BC ID</th>
@@ -56,6 +57,7 @@
 
     {% for item in requests %}
     <tr>
+	  <td>{{ item.id }}</td>
       <td>{{ item.item_name }}</td>
       <td>{{ item.requested_by }}</td>
       <td>{{ item.bc_id }}</td>
